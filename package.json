@@ -1,0 +1,75 @@
+{
+  "name": "@yolajs/router",
+  "version": "1.0.0",
+  "description": "Simple routing for React",
+  "main": "index.js",
+  "module": "es/index.js",
+  "files": [
+    "es",
+    "index.js",
+    "umd",
+    "lib"
+  ],
+  "scripts": {
+    "precommit": "lint-staged",
+    "build": "node scripts/build.js",
+    "test": "jest",
+    "clean": "shx rm -rf lib es umd index.js",
+    "format": "prettier '**/*.js' --write"
+  },
+  "peerDependencies": {
+    "react": "^16.7.0-alpha.2"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.1.5",
+    "@babel/core": "^7.1.6",
+    "@babel/plugin-external-helpers": "^7.0.0",
+    "@babel/preset-env": "^7.1.6",
+    "@babel/preset-react": "^7.0.0",
+    "@babel/preset-typescript": "^7.1.0",
+    "@types/react": "^16.7.6",
+    "@types/uglify-js": "^3.0.4",
+    "gzip-size": "^5.0.0",
+    "husky": "^1.2.0",
+    "lint-staged": "^8.1.0",
+    "prettier": "^1.15.2",
+    "pretty-bytes": "^5.1.0",
+    "react": "^16.7.0-alpha.2",
+    "rollup": "^0.67.3",
+    "rollup-plugin-babel": "^4.0.3",
+    "rollup-plugin-commonjs": "^9.2.0",
+    "rollup-plugin-node-resolve": "^3.4.0",
+    "rollup-plugin-replace": "^2.1.0",
+    "rollup-plugin-typescript": "^1.0.0",
+    "rollup-plugin-uglify": "^6.0.0",
+    "shx": "^0.3.2",
+    "tslib": "^1.9.3",
+    "typescript": "^3.1.6"
+  },
+  "jest": {
+    "globals": {
+      "__DEV__": true
+    },
+    "testRegex": ".+\\.test\\.js$"
+  },
+  "lint-staged": {
+    "*.{js,jsx,json,css,ts,tsx}": [
+      "prettier --write",
+      "git add"
+    ]
+  },
+  "author": "Jean H.",
+  "keywords": [
+    "react",
+    "react router"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yolajs/router.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yolajs/router/issues"
+  },
+  "homepage": "https://github.com/yolajs/router#readme"
+}
