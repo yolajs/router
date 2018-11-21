@@ -81,7 +81,7 @@ let createHistory = (source: Source) => {
 
 ////////////////////////////////////////////////////////////////////////////////
 // Stores history entries in memory for testing or other platforms like Native
-let createMemorySource;
+let createMemorySource: any;
 if (process.env.NODE_ENV !== "production") {
   createMemorySource = (initialPathname = "/") => {
     let index = 0;
@@ -133,7 +133,7 @@ let getSource = () => {
     : createMemorySource();
 };
 
-let globalHistory;
+let globalHistory: any;
 if (process.env.NODE_ENV !== "production") {
   globalHistory = createHistory(getSource());
 } else {
@@ -256,7 +256,7 @@ function useLocation() {
   const [location, setLocation] = useState(globalHistory.location);
   useEffect(
     () =>
-      globalHistory.listen(({ location }) => {
+      globalHistory.listen(({ location }: any) => {
         setLocation(location);
       }),
     []
@@ -451,7 +451,7 @@ function Link(props: LinkProps) {
     assign({}, anchorProps, {
       ariaCurrent: isCurrent ? "page" : undefined,
       href,
-      onClick: event => {
+      onClick: (event: React.MouseEvent<HTMLAnchorElement>) => {
         if (anchorProps.onClick) anchorProps.onClick(event);
         if (shouldNavigate(event)) {
           event.preventDefault();
