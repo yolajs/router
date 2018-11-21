@@ -10,14 +10,20 @@ const exec = (command, extraEnv) =>
   });
 
 console.log("\nBuilding ES modules ...");
-exec('babel src -d es --ignore *.test.js --extensions ".ts,.tsx"', {
-  BABEL_ENV: "es"
-});
+exec(
+  'babel src -d es --ignore **/*.test.js,**/*.test.tsx --extensions ".ts,.tsx"',
+  {
+    BABEL_ENV: "es"
+  }
+);
 
 console.log("Building CommonJS modules ...");
-exec('babel src -d . --ignore *.test.js --extensions ".ts,.tsx"', {
-  BABEL_ENV: "cjs"
-});
+exec(
+  'babel src -d . --ignore **/*.test.js,**/*.test.tsx --extensions ".ts,.tsx"',
+  {
+    BABEL_ENV: "cjs"
+  }
+);
 
 console.log("\nBuilding UMD ...");
 exec("rollup -c -f umd -o umd/switch-router.js", {
