@@ -449,7 +449,7 @@ function Link(props: LinkProps) {
   return createElement(
     "a",
     assign({}, anchorProps, {
-      ariaCurrent: isCurrent ? "page" : undefined,
+      "aria-current": isCurrent ? "page" : undefined,
       href,
       onClick: (event: React.MouseEvent<HTMLAnchorElement>) => {
         if (anchorProps.onClick) anchorProps.onClick(event);
