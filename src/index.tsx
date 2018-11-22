@@ -1,5 +1,4 @@
 import React, {
-  createContext,
   useState,
   ReactNode,
   ComponentType,
@@ -17,21 +16,28 @@ type Source = any;
 type State = {};
 type Action = "POP" | "PUSH";
 type ListenerCallback = (arg: { location: Location; action: Action }) => void;
+type NavigateOptions = { state?: State; replace?: boolean };
+type History = {
+  listen: (listener: ListenerCallback) => () => any;
+  readonly location: Location;
+  navigate: (to: string, options?: NavigateOptions) => null;
+};
 
 const assign = Object.assign;
 const createElement = React.createElement;
 /** @jsx createElement */
 const useContext = React.useContext;
 const useEffect = React.useEffect;
+const createContext = React.createContext;
 
-let getLocation = (source: Source): Location => {
-  return assign({}, source.location, {
-    state: source.history.state,
-    key: (source.history.state && source.history.state.key) || "initial"
+let getLocation = ({ location, history: { state } }: Source): Location => {
+  return assign({}, location, {
+    state,
+    key: (state && state.key) || "initial"
   });
 };
 
-let createHistory = (source: Source) => {
+let createHistory = (source: Source): History => {
   let listeners: ListenerCallback[] = [];
   let location = getLocation(source);
 
@@ -55,10 +61,7 @@ let createHistory = (source: Source) => {
       };
     },
 
-    navigate(
-      to: string,
-      { state, replace = false }: { state?: State; replace?: boolean } = {}
-    ) {
+    navigate(to: string, { state, replace = false }: NavigateOptions = {}) {
       state = assign({}, state, { key: Date.now() + "" });
 
       // try...catch iOS Safari limits to 100 pushState calls
@@ -81,7 +84,7 @@ let createHistory = (source: Source) => {
 
 ////////////////////////////////////////////////////////////////////////////////
 // Stores history entries in memory for testing or other platforms like Native
-let createMemorySource: any;
+let createMemorySource: (initial?: string) => Source;
 if (process.env.NODE_ENV !== "production") {
   createMemorySource = (initialPathname = "/") => {
     let index = 0;
@@ -133,7 +136,7 @@ let getSource = () => {
     : createMemorySource();
 };
 
-let globalHistory: any;
+let globalHistory: History;
 if (process.env.NODE_ENV !== "production") {
   globalHistory = createHistory(getSource());
 } else {
@@ -212,6 +215,30 @@ const shouldNavigate = (event: React.MouseEvent<HTMLAnchorElement>) =>
  *
  */
 
+type CasePropsBase<T extends string, V> = {
+  children?: ReactNode;
+  component?: ComponentType<any>;
+  as?: T;
+  basePath?: string;
+  path: string;
+  exact?: true;
+};
+
+type CasePropsPath<T extends string> = CasePropsBase<T, string> & {};
+
+type CasePropsAnyText<T extends string> = CasePropsBase<T, string> & {
+  anyText: true;
+};
+
+type CasePropsAnyNumber<T extends string> = CasePropsBase<T, number> & {
+  anyNumber: true;
+};
+
+type CaseProps<T extends string> =
+  | CasePropsPath<T>
+  | CasePropsAnyText<T>
+  | CasePropsAnyNumber<T>;
+
 type RouterContext = {
   basePath: string;
   params: {
@@ -225,6 +252,29 @@ const RouterContext = createContext<RouterContext>({
   params: {},
   setFallback: () => {}
 });
+
+const LocationContext = createContext<History>(globalHistory);
+
+function useLocation() {
+  const history = useContext(LocationContext);
+  const [location, setLocation] = useState(history.location);
+  useEffect(
+    () =>
+      history.listen(({ location }: any) => {
+        setLocation(location);
+      }),
+    []
+  );
+  return history;
+}
+
+function useDebug(name: any, arg?: any) {
+  if (process.env.NODE_ENV === "development") {
+    useEffect(() => {
+      console.log("rendering", name, arg);
+    });
+  }
+}
 
 const renderingPrimitive = (
   props: any,
@@ -252,105 +302,59 @@ const renderingPrimitive = (
   );
 };
 
-function useLocation() {
-  const [location, setLocation] = useState(globalHistory.location);
-  useEffect(
-    () =>
-      globalHistory.listen(({ location }: any) => {
-        setLocation(location);
-      }),
-    []
-  );
-  return globalHistory;
-}
+const paramRe = /^:(:?)(.+)/;
 
-function useDebug(name: any, arg?: any) {
-  if (process.env.NODE_ENV !== "production") {
-    useEffect(() => console.log("rendering", name, arg));
+function match(route: string, uri: string) {
+  const routeSegments = segmentize(route);
+  const uriSegments = segmentize(uri);
+  const params: { [key: string]: string | number } = {};
+  const isRootUri = uriSegments[0] === "";
+  if (routeSegments.length > uriSegments.length) {
+    // URI is shorter than the route, no match
+    return null;
   }
-}
 
-function match(
-  basePath: string,
-  route: string,
-  uri: string,
-  compare = segmentMatch
-) {
-  const uriSuffix = uri.substr(basePath.length);
-  return compare(uriSuffix, route);
-}
+  for (let index = 0; index < routeSegments.length; index++) {
+    const routeSegment = routeSegments[index];
+    const uriSegment = uriSegments[index];
+    if (routeSegment === "*") {
+      params["*"] = uriSegments
+        .slice(index)
+        .map(decodeURIComponent)
+        .join("/");
+      return params;
+    }
 
-const exactMatch = (a: string, b: string) => a === b;
-const segmentMatch = (uri: string, route: string) => {
-  const [uriSegment] = uri.split("/");
-  return uriSegment === route;
-};
+    const dynamicMatch = paramRe.exec(routeSegment);
 
-type CasePropsBase<T extends string, V> = {
-  children?: ReactNode;
-  component?: ComponentType<any>;
-  as?: T;
-};
-
-type CasePropsPath<T extends string> = CasePropsBase<T, string> & {
-  path: string;
-  exact?: true;
-};
-
-type CasePropsAnyText<T extends string> = CasePropsBase<T, string> & {
-  anyText: true;
-};
-
-type CasePropsAnyNumber<T extends string> = CasePropsBase<T, number> & {
-  anyNumber: true;
-};
-
-type CaseProps<T extends string> =
-  | CasePropsPath<T>
-  | CasePropsAnyText<T>
-  | CasePropsAnyNumber<T>;
-
-function matchCase<T extends string>(
-  caseProps: CaseProps<T>,
-  basePath: string,
-  uri: string
-): {
-  [key: string]: string | number;
-} | null {
-  if ("path" in caseProps) {
-    return match(
-      basePath,
-      caseProps.path,
-      uri,
-      caseProps.exact ? exactMatch : undefined
-    )
-      ? caseProps.as
-        ? { [caseProps.as]: caseProps.path }
-        : {}
-      : null;
-  } else {
-    const [uriSuffix] = uri.substr(basePath.length).split("/");
-    const key = caseProps.as || "path";
-    if ("anyText" in caseProps) {
-      return uriSuffix !== "" ? { [key]: uriSuffix } : null;
-    } else if ("anyNumber" in caseProps) {
-      const uriNumber = Number(uriSuffix);
-      return !isNaN(uriNumber) ? { [key]: uriNumber } : null;
+    if (dynamicMatch && !isRootUri) {
+      let value: string | number = decodeURIComponent(uriSegment);
+      if (dynamicMatch[1] === ":") {
+        // Request a number
+        value = Number(value);
+        if (isNaN(value)) {
+          // and it is not a number
+          return null;
+        }
+      }
+      params[dynamicMatch[2]] = value;
+    } else if (routeSegment !== uriSegment) {
+      return null;
     }
   }
-  return null;
+  return params;
 }
 
 function Case<T extends string>(props: CaseProps<T>) {
-  const { location } = useLocation();
+  const {
+    location: { pathname }
+  } = useLocation();
   const router = useContext(RouterContext);
-  useDebug(`Case ${props.toString()} for pathname ${location.pathname}`);
+  useDebug(`Case ${props.toString()} for pathname ${pathname}`);
+  const { basePath } = router;
+  const uriSuffix = pathname.substr(basePath.length);
 
-  const matchedChildProps = matchCase(
-    props,
-    router.basePath,
-    location.pathname
-  );
+  const matchedChildProps = match(props.path, uriSuffix);
 
   if (matchedChildProps) {
     return renderingPrimitive(props, router, matchedChildProps);
@@ -366,8 +370,13 @@ function Switch({
   children: ReactNode;
   fallback?: ComponentType<any>;
 }) {
-  const { location } = useLocation();
+  const {
+    location: { pathname }
+  } = useLocation();
   let router = useContext(RouterContext);
+
+  const { basePath } = router;
+  const uriSuffix = pathname.substr(basePath.length);
 
   let matchedChildProps: {
     [key: string]: string | number;
@@ -377,14 +386,16 @@ function Switch({
     if (
       matchedChildProps === null &&
       typeof child === "object" &&
+      child &&
       "props" in child &&
       child.props.path !== undefined
     ) {
-      matchedChildProps = matchCase(
-        child.props,
-        router.basePath,
-        location.pathname
-      );
+      // matchedChildProps = matchCase(
+      //   child.props,
+      //   router.basePath,
+      //   location.pathname
+      // );
+      matchedChildProps = match(child.props.path, uriSuffix);
       if (matchedChildProps !== null) {
         matchedChild = child;
       }
@@ -470,4 +481,15 @@ function Redirect({ to }: { to: string }) {
   return null;
 }
 
-export { Case, Switch, Link, Redirect };
+export {
+  Case,
+  Switch,
+  Link,
+  Redirect,
+  createHistory,
+  createMemorySource,
+  RouterContext,
+  LocationContext,
+  resolve,
+  match
+};

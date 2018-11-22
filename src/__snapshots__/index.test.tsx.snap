@@ -1,0 +1,43 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Nesting <Case /> renders both <Case /> 1`] = `
+<div>
+  <div>
+    Home
+  </div>
+  <div>
+    Dash 
+  </div>
+</div>
+`;
+
+exports[`Passed props parses dynamic segments and passes to components 1`] = `
+<div>
+  Group: 
+  123
+</div>
+`;
+
+exports[`Switch children ignores falsey chidlren 1`] = `
+<div>
+  Home
+</div>
+`;
+
+exports[`smoke tests renders at a path 1`] = `
+<div>
+  Dash 
+</div>
+`;
+
+exports[`smoke tests renders the root component at "/" 1`] = `
+<div>
+  Home
+</div>
+`;
+
+exports[`smoke tests renders the root component at "/" with path="/" 1`] = `
+<div>
+  Home
+</div>
+`;
