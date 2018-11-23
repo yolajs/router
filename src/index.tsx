@@ -388,7 +388,7 @@ function Switch({
       typeof child === "object" &&
       child &&
       "props" in child &&
-      child.props.path !== undefined
+      typeof child.props.path === "string"
     ) {
       matchedChildProps = match(child.props.path, uriSuffix);
       if (matchedChildProps !== null) {

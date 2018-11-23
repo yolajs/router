@@ -33,5 +33,9 @@ const UserDetail = ({userId}) => <div>userId is a Number: {userId}</div>
 ```
 
 ## Documentation
-### `<Case />`
+### `<Case />` props
+- `path`: this is the path to match against the relative or absolute location. It is possible to match anything with `*`, any location segment with `:param`, or any number segment with `::param`
+- `component`: the component to render if it is a match. It will be passed the 
 
+### `<Switch />` props
+ - `fallback`

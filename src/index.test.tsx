@@ -132,6 +132,18 @@ describe("Switch", () => {
       )
     });
   });
+
+  it("render what is not a Case", () => {
+    snapshot({
+      pathname: "/tag",
+      element: (
+        <Switch>
+          <Home />
+          <Case path="tag" component={Dash} />
+        </Switch>
+      )
+    });
+  });
 });
 
 describe("Nesting <Case />", () => {
