@@ -390,11 +390,6 @@ function Switch({
       "props" in child &&
       child.props.path !== undefined
     ) {
-      // matchedChildProps = matchCase(
-      //   child.props,
-      //   router.basePath,
-      //   location.pathname
-      // );
       matchedChildProps = match(child.props.path, uriSuffix);
       if (matchedChildProps !== null) {
         matchedChild = child;

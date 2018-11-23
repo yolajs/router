@@ -18,7 +18,19 @@ exports[`Passed props parses dynamic segments and passes to components 1`] = `
 </div>
 `;
 
-exports[`Switch children ignores falsey chidlren 1`] = `
+exports[`Switch ignores falsey chidlren 1`] = `
+<div>
+  Home
+</div>
+`;
+
+exports[`Switch render first match 1`] = `
+<div>
+  Dash 
+</div>
+`;
+
+exports[`Switch render only one 1`] = `
 <div>
   Home
 </div>

@@ -96,7 +96,7 @@ describe("smoke tests", () => {
   });
 });
 
-describe("Switch children", () => {
+describe("Switch", () => {
   it("ignores falsey chidlren", () => {
     snapshot({
       pathname: "/",
@@ -104,6 +104,30 @@ describe("Switch children", () => {
         <Switch>
           <Case path="" component={Home} />
           {null}
+        </Switch>
+      )
+    });
+  });
+
+  it("render only one", () => {
+    snapshot({
+      pathname: "/",
+      element: (
+        <Switch>
+          <Case path="" component={Home} />
+          <Case path="" component={Dash} />
+        </Switch>
+      )
+    });
+  });
+
+  it("render first match", () => {
+    snapshot({
+      pathname: "/tag",
+      element: (
+        <Switch>
+          <Case path="/" component={Home} />
+          <Case path="tag" component={Dash} />
         </Switch>
       )
     });
