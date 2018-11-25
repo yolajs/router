@@ -37,9 +37,14 @@ exports[`Switch render only one 1`] = `
 `;
 
 exports[`Switch render what is not a Case 1`] = `
-<div>
-  Dash 
-</div>
+Array [
+  <div>
+    Home
+  </div>,
+  <div>
+    Dash 
+  </div>,
+]
 `;
 
 exports[`smoke tests renders at a path 1`] = `

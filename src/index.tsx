@@ -4,7 +4,8 @@ import React, {
   ComponentType,
   ReactChild,
   ReactElement,
-  AnchorHTMLAttributes
+  AnchorHTMLAttributes,
+  SFC
 } from "react";
 
 /**
@@ -215,29 +216,13 @@ const shouldNavigate = (event: React.MouseEvent<HTMLAnchorElement>) =>
  *
  */
 
-type CasePropsBase<T extends string, V> = {
+type CaseProps = {
   children?: ReactNode;
   component?: ComponentType<any>;
-  as?: T;
   basePath?: string;
   path: string;
   exact?: true;
 };
-
-type CasePropsPath<T extends string> = CasePropsBase<T, string> & {};
-
-type CasePropsAnyText<T extends string> = CasePropsBase<T, string> & {
-  anyText: true;
-};
-
-type CasePropsAnyNumber<T extends string> = CasePropsBase<T, number> & {
-  anyNumber: true;
-};
-
-type CaseProps<T extends string> =
-  | CasePropsPath<T>
-  | CasePropsAnyText<T>
-  | CasePropsAnyNumber<T>;
 
 type RouterContext = {
   basePath: string;
@@ -277,7 +262,7 @@ function useDebug(name: any, arg?: any) {
 }
 
 const renderingPrimitive = (
-  props: any,
+  props: CaseProps,
   routerContext: RouterContext,
   matchedChildProps: {
     [key: string]: string | number;
@@ -345,17 +330,13 @@ function match(route: string, uri: string) {
   return params;
 }
 
-function Case<T extends string>(props: CaseProps<T>) {
-  const {
-    location: { pathname }
-  } = useLocation();
-  const router = useContext(RouterContext);
-  useDebug(`Case ${props.toString()} for pathname ${pathname}`);
-  const { basePath } = router;
-  const uriSuffix = pathname.substr(basePath.length);
-
+function renderCaseIfMatch(
+  props: CaseProps,
+  uri: string,
+  router: RouterContext
+) {
+  const uriSuffix = uri.substr(router.basePath.length);
   const matchedChildProps = match(props.path, uriSuffix);
-
   if (matchedChildProps) {
     return renderingPrimitive(props, router, matchedChildProps);
   } else {
@@ -363,74 +344,73 @@ function Case<T extends string>(props: CaseProps<T>) {
   }
 }
 
-function Switch({
-  children,
-  fallback
-}: {
-  children: ReactNode;
+function isCaseElement(
+  element: ReactChild
+): element is ReactElement<CaseProps> {
+  return (
+    element !== null && typeof element === "object" && element.type === Case
+  );
+}
+
+function Case(props: CaseProps) {
+  const {
+    location: { pathname }
+  } = useLocation();
+  const router = useContext(RouterContext);
+  useDebug(`Case ${props.toString()} for pathname ${pathname}`);
+  return renderCaseIfMatch(props, pathname, router);
+}
+
+const Switch: SFC<{
+  children: any;
   fallback?: ComponentType<any>;
-}) {
+}> = ({ children, fallback }) => {
   const {
     location: { pathname }
   } = useLocation();
   let router = useContext(RouterContext);
-
-  const { basePath } = router;
-  const uriSuffix = pathname.substr(basePath.length);
-
-  let matchedChildProps: {
-    [key: string]: string | number;
-  } | null = null;
-  let matchedChild: ReactChild | null = null;
-  React.Children.forEach(children, child => {
-    if (
-      matchedChildProps === null &&
-      typeof child === "object" &&
-      child &&
-      "props" in child &&
-      typeof child.props.path === "string"
-    ) {
-      matchedChildProps = match(child.props.path, uriSuffix);
-      if (matchedChildProps !== null) {
-        matchedChild = child;
-      }
-    }
-  });
-
-  useDebug(`Switch match`, matchedChildProps);
   const [hasToFallBack, setHasToFallback] = useState(false);
+
+  const noDisplay = { display: "none" };
 
   if (fallback) {
     router = assign({}, router, { setFallback: setHasToFallback });
   }
-  if (typeof matchedChild === "object" && matchedChild !== null) {
-    const renderedPrimitive = renderingPrimitive(
-      (matchedChild as ReactElement<any>).props,
-      router,
-      matchedChildProps!
-    );
-    const noDisplay = { display: "none" };
+
+  let matched = false;
+
+  const mappedChildren = React.Children.map(children, child => {
+    if (!isCaseElement(child)) {
+      console.log("not Case : ", JSON.stringify(child, null, 2));
+      return child;
+    } else if (!matched) {
+      const ret = renderCaseIfMatch(child.props, pathname, router);
+      if (ret !== null) matched = true;
+      return ret;
+    } else {
+      return null;
+    }
+  });
+
+  if (matched) {
     if (fallback) {
       return (
         <>
           <div style={hasToFallBack ? {} : noDisplay}>
             {createElement(fallback)}
           </div>
-          <div style={!hasToFallBack ? {} : noDisplay}>{renderedPrimitive}</div>
+          <div style={!hasToFallBack ? {} : noDisplay}>{mappedChildren}</div>
         </>
       );
     } else {
-      return renderedPrimitive;
+      return <>{mappedChildren}</>;
     }
+  } else if (fallback) {
+    return createElement(fallback);
   } else {
-    if (fallback) {
-      return createElement(fallback);
-    } else {
-      return createElement(FallBackInParentTree);
-      // return null;
-    }
+    return <FallBackInParentTree />;
   }
-}
+};
 
 function FallBackInParentTree() {
   const { setFallback } = useContext(RouterContext);

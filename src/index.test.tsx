@@ -198,6 +198,8 @@ describe("resolve", () => {
 describe("match", () => {
   it("should match", () => {
     expect(match("/", "/")).toEqual({});
+    expect(match("", "")).toEqual({});
+    expect(match("", "/")).toEqual({});
     expect(match("/::id", "/123")).toEqual({ id: 123 });
     expect(match("/:user", "/jean")).toEqual({ user: "jean" });
     expect(match("/user/:user/*", "/user/jean/bla/bla")).toEqual({
