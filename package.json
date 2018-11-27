@@ -15,7 +15,7 @@
     "build": "node scripts/build.js",
     "test": "jest",
     "clean": "shx rm -rf lib es umd index.js",
-    "format": "prettier '**/*.js' --write"
+    "format": "prettier '**/*.{tsx|js|ts|jsx}' --write"
   },
   "peerDependencies": {
     "react": "^16.7.0-alpha.2"
