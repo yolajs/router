@@ -289,13 +289,17 @@ const renderingPrimitive = (
 
 const paramRe = /^:(:?)(.+)/;
 
-function match(route: string, uri: string) {
+function match(route: string, uri: string, exact: boolean = false) {
   const routeSegments = segmentize(route);
   const uriSegments = segmentize(uri);
   const params: { [key: string]: string | number } = {};
   const isRootUri = uriSegments[0] === "";
-  if (routeSegments.length > uriSegments.length) {
+  if (
+    routeSegments.length > uriSegments.length ||
+    (exact && routeSegments.length !== uriSegments.length)
+  ) {
     // URI is shorter than the route, no match
+    // Or we want an exact match, so segments lengths should be the same
     return null;
   }
 
@@ -336,7 +340,7 @@ function renderCaseIfMatch(
   router: RouterContext
 ) {
   const uriSuffix = uri.substr(router.basePath.length);
-  const matchedChildProps = match(props.path, uriSuffix);
+  const matchedChildProps = match(props.path, uriSuffix, props.exact);
   if (matchedChildProps) {
     return renderingPrimitive(props, router, matchedChildProps);
   } else {
@@ -381,7 +385,6 @@ const Switch: SFC<{
 
   const mappedChildren = React.Children.map(children, child => {
     if (!isCaseElement(child)) {
-      console.log("not Case : ", JSON.stringify(child, null, 2));
       return child;
     } else if (!matched) {
       const ret = renderCaseIfMatch(child.props, pathname, router);
