@@ -1,15 +1,17 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Nesting <Case /> renders both <Case /> 1`] = `
-<div>
+exports[`Case renders multiple matches 1`] = `
+Array [
   <div>
     Home
-  </div>
+  </div>,
   <div>
     Dash 
-  </div>
-</div>
+  </div>,
+]
 `;
+
+exports[`Case renders only if exact match 1`] = `null`;
 
 exports[`Passed props parses dynamic segments and passes to components 1`] = `
 <div>
@@ -46,6 +48,43 @@ Array [
   </div>,
 ]
 `;
+
+exports[`Switch renders fallback if no match 1`] = `
+<div>
+  404
+</div>
+`;
+
+exports[`Switch renders fallback on nested switch with no match 1`] = `
+Array [
+  <div
+    style={Object {}}
+  >
+    <div>
+      404
+    </div>
+  </div>,
+  <div
+    style={
+      Object {
+        "display": "none",
+      }
+    }
+  >
+    <span>
+      Home
+    </span>
+  </div>,
+]
+`;
+
+exports[`Switch renders fallback on nested switch with no match 2`] = `
+<div>
+  404
+</div>
+`;
+
+exports[`Switch renders null if no match and no fallback 1`] = `null`;
 
 exports[`smoke tests renders at a path 1`] = `
 <div>

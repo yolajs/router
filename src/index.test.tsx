@@ -10,6 +10,9 @@ import {
   match
 } from ".";
 
+let sleep = (ms: number) =>
+  new Promise(resolve => setTimeout(() => resolve(), ms));
+
 let snapshot = ({
   pathname,
   element
@@ -28,10 +31,13 @@ let snapshot = ({
   return tree;
 };
 
-let runWithNavigation = (
-  element: ReactElement<any>,
-  pathname: string = "/"
-) => {
+let runWithNavigation = ({
+  pathname,
+  element
+}: {
+  pathname: string;
+  element: ReactElement<any>;
+}) => {
   let history = createHistory(createMemorySource(pathname));
   let wrapper = renderer.create(
     <LocationContext.Provider value={history}>
@@ -57,6 +63,7 @@ let PropsPrinter: SFC<any> = props => (
 );
 let Reports: SFC<any> = ({ children }) => <div>Reports {children}</div>;
 let AnnualReport: SFC<any> = () => <div>Annual Report</div>;
+let NotFound: SFC<any> = () => <div>404</div>;
 
 describe("smoke tests", () => {
   it(`renders the root component at "/"`, () => {
@@ -144,21 +151,76 @@ describe("Switch", () => {
       )
     });
   });
+
+  it("renders null if no match and no fallback", () => {
+    snapshot({
+      pathname: "/404",
+      element: (
+        <Switch>
+          <Case path="tag" component={Dash} />
+        </Switch>
+      )
+    });
+  });
+
+  it("renders fallback if no match", () => {
+    snapshot({
+      pathname: "/404",
+      element: (
+        <Switch fallback={NotFound}>
+          <Case path="tag" component={Dash} />
+        </Switch>
+      )
+    });
+  });
+
+  it("renders fallback on nested switch with no match", async () => {
+    const tree = runWithNavigation({
+      pathname: "/home/404",
+      element: (
+        <Switch fallback={NotFound}>
+          <Case path="home">
+            <span>Home</span>
+            <Switch>
+              <Case path="tag" component={Dash} />
+              <Case path="tag2" component={Home} />
+            </Switch>
+          </Case>
+        </Switch>
+      )
+    });
+    tree.snapshot();
+    tree.history.navigate("/homez");
+    await sleep(1000);
+    tree.snapshot();
+  });
 });
 
-describe("Nesting <Case />", () => {
-  it("renders both <Case />", () => {
+describe("Case", () => {
+  it("renders multiple matches", () => {
     snapshot({
       pathname: "/home/dash",
       element: (
-        <div>
-          <Case path="home">
-            <Home />
-            <Case path="dash">
-              <Dash />
-            </Case>
+        <Case path="home">
+          <Home />
+          <Case path="dash">
+            <Dash />
           </Case>
-        </div>
+        </Case>
+      )
+    });
+  });
+
+  it("renders only if exact match", () => {
+    snapshot({
+      pathname: "/home/dash",
+      element: (
+        <Case exact path="home">
+          <Home />
+          <Case path="dash">
+            <Dash />
+          </Case>
+        </Case>
       )
     });
   });
