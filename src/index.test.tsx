@@ -64,6 +64,16 @@ let PropsPrinter: SFC<any> = props => (
 let Reports: SFC<any> = ({ children }) => <div>Reports {children}</div>;
 let AnnualReport: SFC<any> = () => <div>Annual Report</div>;
 let NotFound: SFC<any> = () => <div>404</div>;
+let CounterComponentFactory: () => [{ counter: number }, () => null] = () => {
+  let ref = { counter: 0 };
+  return [
+    ref,
+    () => {
+      ref.counter++;
+      return null;
+    }
+  ];
+};
 
 describe("smoke tests", () => {
   it(`renders the root component at "/"`, () => {
@@ -157,42 +167,55 @@ describe("Switch", () => {
       pathname: "/404",
       element: (
         <Switch>
-          <Case path="tag" component={Dash} />
+          <Case path="dash" component={Dash} />
         </Switch>
       )
     });
   });
 
   it("renders fallback if no match", () => {
+    let [ref, CounterComponent] = CounterComponentFactory();
     snapshot({
       pathname: "/404",
       element: (
         <Switch fallback={NotFound}>
-          <Case path="tag" component={Dash} />
+          <Case path="dash" component={Dash} />
+          <CounterComponent />
         </Switch>
       )
     });
+
+    expect(ref.counter).toBe(0);
   });
 
   it("renders fallback on nested switch with no match", async () => {
+    let [ref, CounterComponent] = CounterComponentFactory();
+    let [innerRef, InnerCounterComponent] = CounterComponentFactory();
     const tree = runWithNavigation({
       pathname: "/home/404",
       element: (
         <Switch fallback={NotFound}>
           <Case path="home">
             <span>Home</span>
+            <CounterComponent />
             <Switch>
               <Case path="tag" component={Dash} />
               <Case path="tag2" component={Home} />
+              <InnerCounterComponent />
             </Switch>
           </Case>
         </Switch>
       )
     });
+    await sleep(10);
+    expect(ref.counter).toBe(1);
+    expect(innerRef.counter).toBe(0);
     tree.snapshot();
-    tree.history.navigate("/homez");
-    await sleep(1000);
+    tree.history.navigate("/404");
+    await sleep(10);
     tree.snapshot();
+    expect(ref.counter).toBe(1);
+    expect(innerRef.counter).toBe(0);
   });
 });
 

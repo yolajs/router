@@ -57,9 +57,7 @@ exports[`Switch renders fallback if no match 1`] = `
 
 exports[`Switch renders fallback on nested switch with no match 1`] = `
 Array [
-  <div
-    style={Object {}}
-  >
+  <div>
     <div>
       404
     </div>

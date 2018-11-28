@@ -399,10 +399,12 @@ const Switch: SFC<{
     if (fallback) {
       return (
         <>
-          <div style={hasToFallBack ? {} : noDisplay}>
+          <div style={hasToFallBack ? undefined : noDisplay}>
             {createElement(fallback)}
           </div>
-          <div style={!hasToFallBack ? {} : noDisplay}>{mappedChildren}</div>
+          <div style={!hasToFallBack ? undefined : noDisplay}>
+            {mappedChildren}
+          </div>
         </>
       );
     } else {
