@@ -217,6 +217,36 @@ describe("Switch", () => {
     expect(ref.counter).toBe(1);
     expect(innerRef.counter).toBe(0);
   });
+
+  it("renders fallback on nested switch with no match, then renders on match", async () => {
+    let [ref, CounterComponent] = CounterComponentFactory();
+    let [innerRef, InnerCounterComponent] = CounterComponentFactory();
+    const tree = runWithNavigation({
+      pathname: "/home/404",
+      element: (
+        <Switch fallback={NotFound}>
+          <Case path="home">
+            <span>Home</span>
+            <CounterComponent />
+            <Switch>
+              <Case path="tag" component={Dash} />
+              <Case path="tag2" component={Home} />
+              <InnerCounterComponent />
+            </Switch>
+          </Case>
+        </Switch>
+      )
+    });
+    await sleep(10);
+    expect(ref.counter).toBe(1);
+    expect(innerRef.counter).toBe(0);
+    tree.snapshot();
+    tree.history.navigate("/home/tag");
+    await sleep(10);
+    tree.snapshot();
+    expect(ref.counter).toBe(1);
+    expect(innerRef.counter).toBe(1);
+  });
 });
 
 describe("Case", () => {
