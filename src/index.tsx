@@ -13,15 +13,32 @@ import React, {
  * History (from reach router)
  *
  */
-type Source = any;
-type State = {};
+type SourceEventListener = (
+  type: "popstate",
+  listener: EventListenerOrEventListenerObject
+) => void;
+type BaseLocation = Pick<
+  Location,
+  "pathname" | "search" | "assign" | "replace"
+>;
+type BaseHistory = Pick<History, "replaceState" | "pushState" | "state">;
+type Source<T extends BaseLocation, U extends BaseHistory> = {
+  location: T;
+  history: U;
+  addEventListener: SourceEventListener;
+  removeEventListener: SourceEventListener;
+};
+type State = { [key: string]: any };
 type Action = "POP" | "PUSH";
-type ListenerCallback = (arg: { location: Location; action: Action }) => void;
 type NavigateOptions = { state?: State; replace?: boolean };
-type History = {
-  listen: (listener: ListenerCallback) => () => any;
-  readonly location: Location;
-  navigate: (to: string, options?: NavigateOptions) => null;
+type ListenerCallback<T extends BaseLocation> = (
+  arg: { location: RouterLocation<T>; action: Action }
+) => void;
+type RouterLocation<T extends BaseLocation> = T & { state: State; key: string };
+type RouterHistory<T extends BaseLocation> = {
+  readonly location: RouterLocation<T>;
+  listen: (listener: ListenerCallback<T>) => () => any;
+  navigate: (to: string, options?: NavigateOptions) => void;
 };
 
 const assign = Object.assign;
@@ -31,22 +48,27 @@ const useContext = React.useContext;
 const useEffect = React.useEffect;
 const createContext = React.createContext;
 
-let getLocation = ({ location, history: { state } }: Source): Location => {
+let getLocation = <T extends BaseLocation, U extends BaseHistory>({
+  location,
+  history: { state }
+}: Source<T, U>): RouterLocation<T> => {
   return assign({}, location, {
     state,
     key: (state && state.key) || "initial"
   });
 };
 
-let createHistory = (source: Source): History => {
-  let listeners: ListenerCallback[] = [];
+let createHistory = <T extends BaseLocation, U extends BaseHistory>(
+  source: Source<T, U>
+): RouterHistory<T> => {
+  let listeners: ListenerCallback<T>[] = [];
   let location = getLocation(source);
 
   return {
     get location() {
       return location;
     },
-    listen(listener: ListenerCallback) {
+    listen(listener) {
       listeners.push(listener);
 
       let popstateListener = () => {
@@ -62,15 +84,15 @@ let createHistory = (source: Source): History => {
       };
     },
 
-    navigate(to: string, { state, replace = false }: NavigateOptions = {}) {
+    navigate(to, { state, replace = false }: NavigateOptions = {}) {
       state = assign({}, state, { key: Date.now() + "" });
 
       // try...catch iOS Safari limits to 100 pushState calls
       try {
         if (replace) {
-          source.history.replaceState(state, null, to);
+          source.history.replaceState(state, "", to);
         } else {
-          source.history.pushState(state, null, to);
+          source.history.pushState(state, "", to);
         }
       } catch (e) {
         source.location[replace ? "replace" : "assign"](to);
@@ -78,26 +100,29 @@ let createHistory = (source: Source): History => {
 
       location = getLocation(source);
       listeners.forEach(listener => listener({ location, action: "PUSH" }));
-      return null;
     }
   };
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 // Stores history entries in memory for testing or other platforms like Native
-let createMemorySource: (initial?: string) => Source;
+let createMemorySource: (initial?: string) => Source<BaseLocation, BaseHistory>;
 if (process.env.NODE_ENV !== "production") {
   createMemorySource = (initialPathname = "/") => {
     let index = 0;
     let stack = [{ pathname: initialPathname, search: "" }];
     let states: {}[] = [];
+    let locationProperties = {
+      assign: () => {},
+      replace: () => {}
+    };
 
     return {
       get location() {
-        return stack[index];
+        return assign({}, stack[index], locationProperties);
       },
-      addEventListener(name: any, fn: any) {},
-      removeEventListener(name: any, fn: any) {},
+      addEventListener() {},
+      removeEventListener() {},
       history: {
         get entries() {
           return stack;
@@ -137,7 +162,7 @@ let getSource = () => {
     : createMemorySource();
 };
 
-let globalHistory: History;
+let globalHistory: RouterHistory<Location | BaseLocation>;
 if (process.env.NODE_ENV !== "production") {
   globalHistory = createHistory(getSource());
 } else {
@@ -238,14 +263,14 @@ const RouterContext = createContext<RouterContext>({
   setFallback: () => {}
 });
 
-const LocationContext = createContext<History>(globalHistory);
+const LocationContext = createContext(globalHistory);
 
 function useLocation() {
   const history = useContext(LocationContext);
   const [location, setLocation] = useState(history.location);
   useEffect(
     () =>
-      history.listen(({ location }: any) => {
+      history.listen(({ location }) => {
         setLocation(location);
       }),
     []
