@@ -34,7 +34,10 @@ type NavigateOptions = { state?: State; replace?: boolean };
 type ListenerCallback<T extends BaseLocation> = (
   arg: { location: RouterLocation<T>; action: Action }
 ) => void;
-type RouterLocation<T extends BaseLocation> = T & { state: State; key: string };
+type RouterLocation<T extends BaseLocation> = T & {
+  state?: State;
+  key: string;
+};
 type RouterHistory<T extends BaseLocation> = {
   readonly location: RouterLocation<T>;
   listen: (listener: ListenerCallback<T>) => () => any;
@@ -111,7 +114,7 @@ if (process.env.NODE_ENV !== "production") {
   createMemorySource = (initialPathname = "/") => {
     let index = 0;
     let stack = [{ pathname: initialPathname, search: "" }];
-    let states: {}[] = [];
+    let states: State[] = [];
     let locationProperties = {
       assign: () => {},
       replace: () => {}
