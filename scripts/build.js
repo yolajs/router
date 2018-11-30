@@ -37,5 +37,10 @@ exec("rollup -c -f umd -o umd/yolajs-router.min.js", {
   NODE_ENV: "production"
 });
 
+console.log("\nBuilding declaration file index.d.ts ...");
+exec("tsc", {
+  NODE_ENV: "production"
+});
+
 const size = gzipSize.sync(fs.readFileSync("umd/yolajs-router.min.js"));
 console.log("\ngzipped, the UMD build is %s", prettyBytes(size));
