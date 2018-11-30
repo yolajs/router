@@ -14,7 +14,7 @@
     "precommit": "lint-staged",
     "build": "node scripts/build.js",
     "test": "jest",
-    "clean": "shx rm -rf lib es umd index.js",
+    "clean": "shx rm -rf lib es umd index.js index.d.ts",
     "format": "prettier '**/*.{tsx|js|ts|jsx}' --write"
   },
   "peerDependencies": {
