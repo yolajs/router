@@ -2,6 +2,7 @@
 /node_modules
 /umd
 /index.js
+/index.d.ts
 /lib
 /compat
 npm-debug.log*
