@@ -7,6 +7,7 @@
   "files": [
     "es",
     "index.js",
+    "index.d.ts",
     "umd",
     "lib"
   ],
