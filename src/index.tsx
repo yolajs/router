@@ -5,7 +5,9 @@ import React, {
   ReactChild,
   ReactElement,
   AnchorHTMLAttributes,
-  SFC
+  SFC,
+  useMemo,
+  memo
 } from "react";
 
 /**
@@ -397,19 +399,23 @@ function isCaseElement(
   );
 }
 
-function Case(props: CaseProps) {
+const Case = memo((props: CaseProps) => {
   const {
     location: { pathname }
   } = useLocation();
   const router = useContext(RouterContext);
   useDebug(`Case ${props.toString()} for pathname ${pathname}`);
-  return renderCaseIfMatch(props, pathname, router);
-}
+  return useMemo(() => renderCaseIfMatch(props, pathname, router), [
+    pathname,
+    router,
+    ...Object.values(props)
+  ]);
+});
 
 const Switch: SFC<{
   children: any;
   fallback?: ComponentType<any>;
-}> = ({ children, fallback }) => {
+}> = memo(({ children, fallback }) => {
   const {
     location: { pathname }
   } = useLocation();
@@ -456,20 +462,20 @@ const Switch: SFC<{
   } else {
     return <FallBackInParentTree />;
   }
-};
+});
 
-function FallBackInParentTree() {
+const FallBackInParentTree = memo(() => {
   const { setFallback } = useContext(RouterContext);
   useEffect(() => {
     setFallback(true);
     return () => setFallback(false);
   }, []);
   return null;
-}
+});
 
 type LinkProps = AnchorHTMLAttributes<HTMLAnchorElement> & { to: string };
 
-function Link(props: LinkProps) {
+const Link = memo((props: LinkProps) => {
   const { location, navigate } = useLocation();
   const router = useContext(RouterContext);
   useDebug(`Link ${props.to}`);
@@ -492,7 +498,7 @@ function Link(props: LinkProps) {
       }
     })
   );
-}
+});
 
 function Redirect({ to }: { to: string }) {
   const { navigate } = useLocation();
