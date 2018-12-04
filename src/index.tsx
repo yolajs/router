@@ -7,7 +7,8 @@ import React, {
   AnchorHTMLAttributes,
   SFC,
   useMemo,
-  memo
+  memo,
+  useCallback
 } from "react";
 
 /**
@@ -36,11 +37,11 @@ type NavigateOptions = { state?: State; replace?: boolean };
 type ListenerCallback<T extends BaseLocation> = (
   arg: { location: RouterLocation<T>; action: Action }
 ) => void;
-type RouterLocation<T extends BaseLocation> = T & {
+type RouterLocation<T extends BaseLocation = BaseLocation> = T & {
   state?: State;
   key: string;
 };
-type RouterHistory<T extends BaseLocation> = {
+type RouterHistory<T extends BaseLocation = BaseLocation> = {
   readonly location: RouterLocation<T>;
   listen: (listener: ListenerCallback<T>) => () => any;
   navigate: (to: string, options?: NavigateOptions) => void;
@@ -270,17 +271,26 @@ const RouterContext = createContext<RouterContext>({
 
 const LocationContext = createContext(globalHistory);
 
-function useLocation() {
+type MapLocation<T> = (location: RouterLocation) => T;
+const identity: MapLocation<string> = (location: RouterLocation) =>
+  location.pathname;
+
+function useLocation(): [string, RouterHistory];
+function useLocation<T>(mapLocation: MapLocation<T>): [T, RouterHistory];
+function useLocation<T>(mapLocation?: MapLocation<T>): [T, RouterHistory] {
+  const map = mapLocation || ((identity as any) as MapLocation<T>);
   const history = useContext(LocationContext);
-  const [location, setLocation] = useState(history.location);
+  const [locationState, setLocation] = useState(map(history.location));
   useEffect(
     () =>
       history.listen(({ location }) => {
-        setLocation(location);
+        const newLoc = map(location);
+        // if (locationState !== newLoc) setLocation(newLoc);
+        setLocation(newLoc);
       }),
-    []
+    [map]
   );
-  return history;
+  return [locationState, history];
 }
 
 function useDebug(name: any, arg?: any) {
@@ -382,8 +392,8 @@ function renderCaseIfMatch(
   uri: string,
   router: RouterContext
 ) {
-  const uriSuffix = uri.substr(router.basePath.length);
-  const matchedChildProps = match(props.path, uriSuffix, props.exact);
+  // const uriSuffix = uri.substr(router.basePath.length);
+  const matchedChildProps = match(props.path, uri, props.exact);
   if (matchedChildProps) {
     return renderingPrimitive(props, router, matchedChildProps);
   } else {
@@ -400,13 +410,15 @@ function isCaseElement(
 }
 
 const Case = memo((props: CaseProps) => {
-  const {
-    location: { pathname }
-  } = useLocation();
   const router = useContext(RouterContext);
-  useDebug(`Case ${props.toString()} for pathname ${pathname}`);
-  return useMemo(() => renderCaseIfMatch(props, pathname, router), [
-    pathname,
+  const mapLocation = useCallback(
+    (loc: RouterLocation) => loc.pathname.substr(router.basePath.length),
+    [router.basePath.length]
+  );
+  const [uriSuffix] = useLocation(mapLocation);
+  useDebug(`Case ${props.toString()} for pathname ${uriSuffix}`);
+  return useMemo(() => renderCaseIfMatch(props, uriSuffix, router), [
+    uriSuffix,
     router,
     ...Object.values(props)
   ]);
@@ -416,10 +428,12 @@ const Switch: SFC<{
   children: any;
   fallback?: ComponentType<any>;
 }> = memo(({ children, fallback }) => {
-  const {
-    location: { pathname }
-  } = useLocation();
   let router = useContext(RouterContext);
+  const mapLocation = useCallback(
+    (loc: RouterLocation) => loc.pathname.substr(router.basePath.length),
+    [router.basePath.length]
+  );
+  const [uriSuffix] = useLocation(mapLocation);
   const [hasToFallBack, setHasToFallback] = useState(false);
 
   const noDisplay = { display: "none" };
@@ -434,7 +448,7 @@ const Switch: SFC<{
     if (!isCaseElement(child)) {
       return child;
     } else if (!matched) {
-      const ret = renderCaseIfMatch(child.props, pathname, router);
+      const ret = renderCaseIfMatch(child.props, uriSuffix, router);
       if (ret !== null) matched = true;
       return ret;
     } else {
@@ -476,14 +490,14 @@ const FallBackInParentTree = memo(() => {
 type LinkProps = AnchorHTMLAttributes<HTMLAnchorElement> & { to: string };
 
 const Link = memo((props: LinkProps) => {
-  const { location, navigate } = useLocation();
+  const [pathname, { navigate }] = useLocation();
   const router = useContext(RouterContext);
   useDebug(`Link ${props.to}`);
 
   let { to, ...anchorProps } = props;
   const href = resolve(to, router.basePath);
-  const isCurrent = location.pathname === href;
-  const isPartiallyCurrent = startsWith(location.pathname, href);
+  const isCurrent = pathname === href;
+  const isPartiallyCurrent = startsWith(pathname, href);
   return createElement(
     "a",
     assign({}, anchorProps, {
@@ -501,10 +515,13 @@ const Link = memo((props: LinkProps) => {
 });
 
 function Redirect({ to }: { to: string }) {
-  const { navigate } = useLocation();
-  useEffect(() => {
-    navigate(to, { replace: true });
-  }, []);
+  const [, { navigate }] = useLocation(() => void 0);
+  useEffect(
+    () => {
+      navigate(to, { replace: true });
+    },
+    [to]
+  );
   return null;
 }
 
