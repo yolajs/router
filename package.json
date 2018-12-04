@@ -1,6 +1,6 @@
 {
   "name": "@yolajs/router",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Simple routing for React",
   "main": "index.js",
   "module": "es/index.js",
