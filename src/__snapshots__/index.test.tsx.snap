@@ -129,6 +129,15 @@ Array [
 
 exports[`Switch renders null if no match and no fallback 1`] = `null`;
 
+exports[`routing context resolves parameters in basePath 1`] = `
+<a
+  href="/organization/4/new"
+  onClick={[Function]}
+>
+  link
+</a>
+`;
+
 exports[`smoke tests renders at a path 1`] = `
 <div>
   Dash 

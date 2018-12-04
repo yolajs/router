@@ -7,7 +7,8 @@ import {
   Case,
   Switch,
   resolve,
-  match
+  match,
+  Link
 } from ".";
 
 let sleep = (ms: number) =>
@@ -279,6 +280,19 @@ describe("Case", () => {
   });
 });
 
+describe("routing context", () => {
+  it("resolves parameters in basePath", () => {
+    snapshot({
+      pathname: "/organization/4",
+      element: (
+        <Case path="/organization/::organizationId">
+          <Link to="new">link</Link>
+        </Case>
+      )
+    });
+  });
+});
+
 describe("Passed props", () => {
   it("parses dynamic segments and passes to components", () => {
     snapshot({
@@ -312,14 +326,24 @@ describe("resolve", () => {
 
 describe("match", () => {
   it("should match", () => {
-    expect(match("/", "/")).toEqual({});
-    expect(match("", "")).toEqual({});
-    expect(match("", "/")).toEqual({});
-    expect(match("/::id", "/123")).toEqual({ id: 123 });
-    expect(match("/:user", "/jean")).toEqual({ user: "jean" });
+    const baseMatch = { baseuri: "", params: {} };
+    expect(match("/", "/")).toEqual(baseMatch);
+    expect(match("", "")).toEqual(baseMatch);
+    expect(match("", "/")).toEqual(baseMatch);
+    expect(match("/::id", "/123")).toEqual({
+      baseuri: "123",
+      params: { id: 123 }
+    });
+    expect(match("/:user", "/jean")).toEqual({
+      baseuri: "jean",
+      params: { user: "jean" }
+    });
     expect(match("/user/:user/*", "/user/jean/bla/bla")).toEqual({
-      "*": "bla/bla",
-      user: "jean"
+      baseuri: "user/jean",
+      params: {
+        "*": "bla/bla",
+        user: "jean"
+      }
     });
   });
 

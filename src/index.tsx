@@ -293,23 +293,24 @@ const renderingPrimitive = (
   props: CaseProps,
   routerContext: RouterContext,
   matchedChildProps: {
-    [key: string]: string | number;
+    params: { [key: string]: string | number };
+    baseuri: string;
   }
 ) => {
   const { children, component } = props;
   return (
     <RouterContext.Provider
       value={assign({}, routerContext, {
-        basePath: routerContext.basePath + props.path + "/",
-        params: assign({}, routerContext.params, matchedChildProps)
+        basePath: routerContext.basePath + matchedChildProps.baseuri + "/",
+        params: assign({}, routerContext.params, matchedChildProps.params)
       })}
     >
       {children
         ? children instanceof Function
-          ? children(matchedChildProps)
+          ? children(matchedChildProps.params)
           : children
         : component
-        ? createElement(component, matchedChildProps)
+        ? createElement(component, matchedChildProps.params)
         : null}
     </RouterContext.Provider>
   );
@@ -339,7 +340,13 @@ function match(route: string, uri: string, exact: boolean = false) {
         .slice(index)
         .map(decodeURIComponent)
         .join("/");
-      return params;
+      return {
+        params,
+        baseuri: uriSegments
+          .slice(0, index)
+          .map(decodeURIComponent)
+          .join("/")
+      };
     }
 
     const dynamicMatch = paramRe.exec(routeSegment);
@@ -359,7 +366,13 @@ function match(route: string, uri: string, exact: boolean = false) {
       return null;
     }
   }
-  return params;
+  return {
+    params,
+    baseuri: uriSegments
+      .slice(0, routeSegments.length)
+      .map(decodeURIComponent)
+      .join("/")
+  };
 }
 
 function renderCaseIfMatch(
