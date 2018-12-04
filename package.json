@@ -13,7 +13,7 @@
   ],
   "scripts": {
     "precommit": "lint-staged",
-    "preversion": "yarn test",
+    "preversion": "yarn test && yarn build",
     "postversion": "git push --tags && yarn publish . --tag $npm_package_version && git push && echo \"Successfully released version $npm_package_version!\"",
     "build": "node scripts/build.js",
     "test": "jest",
