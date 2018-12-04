@@ -8,7 +8,8 @@ import React, {
   SFC,
   useMemo,
   memo,
-  useCallback
+  useCallback,
+  useRef
 } from "react";
 
 /**
@@ -281,12 +282,13 @@ function useLocation<T>(mapLocation?: MapLocation<T>): [T, RouterHistory] {
   const map = mapLocation || ((identity as any) as MapLocation<T>);
   const history = useContext(LocationContext);
   const [locationState, setLocation] = useState(map(history.location));
+  const hackState = useRef(locationState);
+  hackState.current = locationState;
   useEffect(
     () =>
       history.listen(({ location }) => {
         const newLoc = map(location);
-        // if (locationState !== newLoc) setLocation(newLoc);
-        setLocation(newLoc);
+        if (hackState.current !== newLoc) setLocation(newLoc);
       }),
     [map]
   );
